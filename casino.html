@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мини-казино</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: white;
+            text-align: center;
+        }
+        .slot-machine {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .reel {
+            width: 100px;
+            height: 100px;
+            background-color: #333;
+            margin: 0 10px;
+            font-size: 40px;
+            line-height: 100px;
+            border-radius: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #ffcc00;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:disabled {
+            background-color: #666;
+            cursor: not-allowed;
+        }
+        #balance {
+            font-size: 24px;
+            margin: 10px 0;
+        }
+        #result {
+            font-size: 20px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h2>Мини-казино: Слоты</h2>
+    <div id="balance">Баланс: 1000 монет</div>
+    <div class="slot-machine">
+        <div id="reel1" class="reel">?</div>
+        <div id="reel2" class="reel">?</div>
+        <div id="reel3" class="reel">?</div>
+    </div>
+    <button id="spinButton" onclick="spin()">Крутить (10 монет)</button>
+    <div id="result"></div>
+
+    <script>
+        // Инициализация Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+
+        // Символы для барабанов
+        const symbols = ["🍒", "🍋", "🍊", "💎", "⭐"];
+        
+        // Изначальный баланс
+        let balance = parseInt(localStorage.getItem("casinoBalance")) || 1000;
+        document.getElementById("balance").innerText = `Баланс: ${balance} монет`;
+
+        // Элементы интерфейса
+        const reels = [
+            document.getElementById("reel1"),
+            document.getElementById("reel2"),
+            document.getElementById("reel3")
+        ];
+        const result = document.getElementById("result");
+        const spinButton = document.getElementById("spinButton");
+
+        // Функция вращения барабанов
+        function spin() {
+            if (balance < 10) {
+                result.innerText = "Недостаточно монет!";
+                spinButton.disabled = true;
+                return;
+            }
+
+            balance -= 10;
+            localStorage.setItem("casinoBalance", balance);
+            document.getElementById("balance").innerText = `Баланс: ${balance} монет`;
+            spinButton.disabled = true;
+            result.innerText = "Крутим...";
+
+            // Анимация вращения
+            let spins = 0;
+            const interval = setInterval(() => {
+                reels.forEach(reel => {
+                    reel.innerText = symbols[Math.floor(Math.random() * symbols.length)];
+                });
+                spins++;
+                if (spins > 15) {
+                    clearInterval(interval);
+                    finishSpin();
+                }
+            }, 100);
+        }
+
+        // Завершение вращения и подсчёт выигрыша
+        function finishSpin() {
+            const resultSymbols = reels.map(reel => reel.innerText);
+            let win = 0;
+
+            // Проверка комбинаций
+            if (resultSymbols[0] === resultSymbols[1] && resultSymbols[1] === resultSymbols[2]) {
+                win = 50;  // Три одинаковых символа
+                result.innerText = `Вы выиграли ${win} монет!`;
+            } else if (resultSymbols[0] === resultSymbols[1] || resultSymbols[1] === resultSymbols[2]) {
+                win = 20;  // Два одинаковых символа подряд
+                result.innerText = `Вы выиграли ${win} монет!`;
+            } else {
+                result.innerText = "Удача не на вашей стороне!";
+            }
+
+            balance += win;
+            localStorage.setItem("casinoBalance", balance);
+            document.getElementById("balance").innerText = `Баланс: ${balance} монет`;
+            spinButton.disabled = false;
+        }
+
+        // Кнопка "Готово" для выхода
+        tg.MainButton.setText("Выйти").show().onClick(() => {
+            tg.close();
+        });
+
+        // Проверка баланса при загрузке
+        if (balance < 10) {
+            spinButton.disabled = true;
+            result.innerText = "Пополните баланс для игры!";
+        }
+    </script>
+</body>
+</html>
